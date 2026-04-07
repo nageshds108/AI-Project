@@ -1,7 +1,10 @@
-const { GoogleGenAI } = require("@google/genai")
-const { z } = require("zod")
-const { zodToJsonSchema } = require("zod-to-json-schema")
-const puppeteer = require("puppeteer")
+import { GoogleGenAI } from "@google/genai";
+import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import puppeteer from "puppeteer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
@@ -34,15 +37,42 @@ const interviewReportSchema = z.object({
 
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
 
-
     const prompt = `Generate an interview report for a candidate with the following details:
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
-                        Job Description: ${jobDescription}
-`
+Resume: ${resume}
+Self Description: ${selfDescription}
+Job Description: ${jobDescription}
+
+Return ONLY a valid JSON object with these exact fields:
+- matchScore: number
+- technicalQuestions: array of objects with keys question, intention, answer
+- behavioralQuestions: array of objects with keys question, intention, answer
+- skillGaps: array of objects with keys skill, severity
+- preparationPlan: array of objects with keys day, focus, tasks (tasks must be an array of strings)
+- title: string
+
+Example:
+{
+  "matchScore": 92,
+  "technicalQuestions": [
+    { "question": "...", "intention": "...", "answer": "..." }
+  ],
+  "behavioralQuestions": [
+    { "question": "...", "intention": "...", "answer": "..." }
+  ],
+  "skillGaps": [
+    { "skill": "Spring Boot", "severity": "low" }
+  ],
+  "preparationPlan": [
+    { "day": 1, "focus": "...", "tasks": ["..."] }
+  ],
+  "title": "Interview Report - ..."
+}
+
+Do not include any additional fields or text outside the JSON object.
+`;
 
     const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-flash-latest",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
@@ -50,10 +80,122 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
         }
     })
 
-    return JSON.parse(response.text)
+    console.log("AI raw response text:", response.text);
 
+    if (!response.text) {
+        throw new Error("AI returned an empty response text.");
+    }
 
+    let report;
+    try {
+        report = JSON.parse(response.text);
+    } catch (parseError) {
+        console.error("Failed to parse AI response text as JSON:", response.text);
+        throw parseError;
+    }
+
+    return normalizeInterviewReport(report);
 }
+
+function normalizeInterviewReport(report) {
+    if (typeof report !== "object" || report === null) {
+        return report;
+    }
+
+    return {
+        ...report,
+        technicalQuestions: normalizeQAArray(report.technicalQuestions),
+        behavioralQuestions: normalizeQAArray(report.behavioralQuestions),
+        skillGaps: normalizeKeyValueArray(report.skillGaps, ["skill", "severity"]),
+        preparationPlan: normalizePreparationPlan(report.preparationPlan),
+    };
+}
+
+function normalizeQAArray(arr) {
+    if (!Array.isArray(arr)) {
+        return arr ?? [];
+    }
+
+    if (arr.length === 0 || typeof arr[0] === "object") {
+        return arr;
+    }
+
+    const normalized = [];
+    let current = {};
+
+    for (let i = 0; i < arr.length; i += 2) {
+        const key = arr[i];
+        const value = arr[i + 1];
+        if (key === "question" || key === "intention" || key === "answer") {
+            current[key] = value;
+            if (key === "answer") {
+                normalized.push(current);
+                current = {};
+            }
+        }
+    }
+
+    return normalized;
+}
+
+function normalizeKeyValueArray(arr, keys) {
+    if (!Array.isArray(arr)) {
+        return arr ?? [];
+    }
+
+    if (arr.length === 0 || typeof arr[0] === "object") {
+        return arr;
+    }
+
+    const normalized = [];
+    let current = {};
+
+    for (let i = 0; i < arr.length; i += 2) {
+        const key = arr[i];
+        const value = arr[i + 1];
+        if (keys.includes(key)) {
+            current[key] = value;
+            if (Object.keys(current).length === keys.length) {
+                normalized.push(current);
+                current = {};
+            }
+        }
+    }
+
+    return normalized;
+}
+
+function normalizePreparationPlan(arr) {
+    if (!Array.isArray(arr)) {
+        return arr ?? [];
+    }
+
+    if (arr.length === 0 || typeof arr[0] === "object") {
+        return arr.map((item) => ({
+            ...item,
+            tasks: Array.isArray(item?.tasks) ? item.tasks : item?.tasks ? [item.tasks] : [],
+        }));
+    }
+
+    const normalized = [];
+    let current = {};
+
+    for (let i = 0; i < arr.length; i += 2) {
+        const key = arr[i];
+        const value = arr[i + 1];
+        if (key === "day" || key === "focus" || key === "tasks") {
+            current[key] = key === "tasks" && !Array.isArray(value) ? [value] : value;
+            if (key === "tasks") {
+                normalized.push(current);
+                current = {};
+            }
+        }
+    }
+
+    return normalized;
+}
+
+ 
 
 
 
@@ -113,4 +255,4 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
 
 // }
 
-// module.exports = { generateInterviewReport, generateResumePdf }
+export { generateInterviewReport };
