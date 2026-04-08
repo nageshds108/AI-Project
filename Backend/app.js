@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js';
 import cors from 'cors';
+import interviewRoutes from './routes/interviewRoutes.js';
 dotenv.config();
 
 
@@ -22,8 +23,9 @@ app.use(cookieParser());
 
 
 app.use('/api/auth', authRoutes);
+app.use('/api/interviews', interviewRoutes);
 
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

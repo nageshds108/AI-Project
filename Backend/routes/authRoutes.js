@@ -1,6 +1,6 @@
 import express from 'express';
 import { registerUser,getMe, loginUser,logoutUser } from '../controllers/authController.js'; 
-import authUser from '../utilis/getUser.js';
+import authUser from '../Middlewares/authUser.js';
 
 
 
