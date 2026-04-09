@@ -2,6 +2,7 @@ import "../Pages/auth.css";
 import { Link,useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {useAuth} from "../hooks/useAuth";
+import AuthLoader from "./AuthLoader";
 
 
 
@@ -23,11 +24,11 @@ function Register() {
         }
 
      if(Loading){
-        return <div>Loading...</div>
+        return <AuthLoader message="Creating your account..." />
     }
     return (  
-        <>
         <div className="form-container">
+        <div className="auth-card">
             <h1>Register</h1>
             <form  onSubmit={handleSubmit}>
                 <div className="inp-grp">
@@ -46,7 +47,7 @@ function Register() {
 
             </form>
         </div>
-        </>
+        </div>
     );
 }
 

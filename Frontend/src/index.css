@@ -17,9 +17,11 @@ html, body,#root{
     padding-inline: 1rem;
     padding-block: 0.75rem;
     border-radius: 0.75rem;
-    background-color: #e1034d;
+    background-color:  #3ecfff;
     color: whitesmoke;
     transition: all 0.2s ease-in-out;
+    font-weight: 500;
+    font-size: 0.95rem;
 }
 
 .btn-primary:active{
