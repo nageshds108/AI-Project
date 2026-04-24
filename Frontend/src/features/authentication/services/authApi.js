@@ -1,5 +1,5 @@
 import axios from 'axios';
-const API_URL = 'http://localhost:8080/api/auth';
+const API_URL = 'https://ai-project-backend-j2qe.onrender.com/api/auth';
 
 export async function register (username, email, password) {
   try {
