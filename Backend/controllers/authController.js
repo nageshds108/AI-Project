@@ -3,6 +3,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import tokenBlacklistModel from '../models/blacklistModel.js'; 
 
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
+};
+
 
 /**
  * @name registerUser
@@ -46,10 +53,7 @@ async function registerUser(req, res) {
     );
 
     res
-      .cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production'
-      })
+      .cookie('token', token, cookieOptions)
       .status(201)
       .json({
         message: 'User registered successfully',
@@ -92,7 +96,7 @@ async function loginUser(req, res) {
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' }).status(200).json({ message: 'Login successful',
+    res.cookie('token', token, cookieOptions).status(200).json({ message: 'Login successful',
         user: {
           id: user._id,
           username: user.username,
@@ -112,7 +116,7 @@ async function logoutUser(req, res) {
     await tokenBlacklistModel.create({ token });
   }
 
-  res.clearCookie('token').json({ message: 'Logout successful' });
+  res.clearCookie('token', cookieOptions).json({ message: 'Logout successful' });
 }
 
 
