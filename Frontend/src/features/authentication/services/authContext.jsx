@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {createContext,useState, useEffect} from "react";
 import { getUser } from "./authApi";
 
@@ -11,8 +12,10 @@ export const AuthProvider = ({children}) => {
         const checkUser = async () => {
             try {
                 const response = await getUser();
-                if (response && response.user) {
+                if (response?.user) {
                     setUser(response.user);
+                } else {
+                    setUser(null);
                 }
             } catch (error) {
                 console.error('Error checking user:', error);

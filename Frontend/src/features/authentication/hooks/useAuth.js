@@ -1,4 +1,3 @@
-import { createContext } from "react";
 import { useContext } from "react";
 import { AuthContext } from "../services/authContext";
 import {login, register,logout,getUser} from "../services/authApi";

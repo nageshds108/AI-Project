@@ -33,11 +33,15 @@ export async function logout () {
     console.error('Logout error:', error);
   }}
 
-  export async function getUser () {
-    try {
-      const response = await axios.get(`${API_URL}/get-me`,{withCredentials: true});
-      return response.data;
-    } catch (error) {
-      console.error('Get current user error:', error);
+export async function getUser () {
+  try {
+    const response = await axios.get(`${API_URL}/get-me`, { withCredentials: true });
+    return response.data;
+  } catch (error) {
+    if (error?.response?.status === 401) {
+      return null;
     }
+    console.error('Get current user error:', error);
+    throw error;
+  }
 }

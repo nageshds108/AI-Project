@@ -64,6 +64,10 @@ const InterviewReportSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  title:{
+    type: String,
+     required: [true, 'Title is required'],
+  }
 });
 
 const InterviewReport = mongoose.model('InterviewReport', InterviewReportSchema);
