@@ -3,7 +3,6 @@ import { generateInterviewReport, generateResumePdf } from '../services/aiServic
 import InterviewReport from '../models/InterviewReportModel.js';
 
 
-
  
 async function generateReport(req, res) {
     try {

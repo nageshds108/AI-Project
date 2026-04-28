@@ -68,8 +68,8 @@ function Interview() {
                 <p className="question-id">{index + 1}</p>
                 <div className="question-copy">
                   <h3>{item.question}</h3>
-                  <p>{item.intention}</p>
-                  <p>{item.answer}</p>
+                  <p><strong>Intention:</strong> {item.intention}</p>
+                  <p><strong>How to Answer:</strong> {item.answer}</p>
                 </div>
               </article>
             ))}
@@ -90,8 +90,8 @@ function Interview() {
                 <p className="question-id">{index + 1}</p>
                 <div className="question-copy">
                   <h3>{item.question}</h3>
-                  <p>{item.intention}</p>
-                  <p>{item.answer}</p>
+                  <p><strong>Intention:</strong> {item.intention}</p>
+                  <p><strong>How to Answer:</strong> {item.answer}</p>
                 </div>
               </article>
             ))}

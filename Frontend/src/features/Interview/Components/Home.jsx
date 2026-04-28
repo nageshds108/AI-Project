@@ -47,7 +47,7 @@ function Home() {
       if (data?._id) {
         navigate(`/interview/${data._id}`);
       } else {
-        navigate("/interview");
+        alert("Report generated response was incomplete. Please try again.");
       }
     } catch {
       alert("Unable to generate report. Please try again.");

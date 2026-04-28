@@ -6,9 +6,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY2 || process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is missing in Backend/.env");
+}
+
 const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY
-})
+    apiKey: GEMINI_API_KEY
+});
 
 
 const interviewReportSchema = z.object({
@@ -35,166 +41,179 @@ const interviewReportSchema = z.object({
     title: z.string().describe("The title of the job for which the interview report is generated"),
 })
 
+// Helper function to parse stringified JSON objects in arrays
+function parseStringifiedObjects(data) {
+    if (!data || typeof data !== "object") return data;
+
+    const parseValue = (val) => {
+        if (typeof val === "string") {
+            // Try to parse if it looks like JSON
+            if ((val.startsWith("{") && val.endsWith("}")) || (val.startsWith("[") && val.endsWith("]"))) {
+                try {
+                    return JSON.parse(val);
+                } catch {
+                    return val;
+                }
+            }
+        }
+        return val;
+    };
+
+    // Parse stringified objects in arrays
+    if (Array.isArray(data.technicalQuestions)) {
+        data.technicalQuestions = data.technicalQuestions.map(q => parseValue(q));
+    }
+    if (Array.isArray(data.behavioralQuestions)) {
+        data.behavioralQuestions = data.behavioralQuestions.map(q => parseValue(q));
+    }
+    if (Array.isArray(data.skillGaps)) {
+        data.skillGaps = data.skillGaps.map(s => parseValue(s));
+    }
+    if (Array.isArray(data.preparationPlan)) {
+        data.preparationPlan = data.preparationPlan.map(p => {
+            const parsed = parseValue(p);
+            // Ensure tasks is an array of strings
+            if (parsed && parsed.tasks && typeof parsed.tasks === "string") {
+                try {
+                    parsed.tasks = JSON.parse(parsed.tasks);
+                } catch {
+                    parsed.tasks = [parsed.tasks];
+                }
+            }
+            return parsed;
+        });
+    }
+
+    return data;
+}
+
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
+
 
     const prompt = `Generate an interview report for a candidate with the following details:
 Resume: ${resume}
 Self Description: ${selfDescription}
 Job Description: ${jobDescription}
 
-Return ONLY a valid JSON object with these exact fields:
-- matchScore: number
-- technicalQuestions: array of objects with keys question, intention, answer
-- behavioralQuestions: array of objects with keys question, intention, answer
-- skillGaps: array of objects with keys skill, severity
-- preparationPlan: array of objects with keys day, focus, tasks (tasks must be an array of strings)
-- title: string
+Return ONLY valid JSON with EXACTLY these keys:
+- matchScore (number 0-100)
+- technicalQuestions (array of objects: { question, intention, answer })
+- behavioralQuestions (array of objects: { question, intention, answer })
+- skillGaps (array of objects: { skill, severity }, severity must be one of: low, medium, high)
+- preparationPlan (array of objects: { day, focus, tasks }, tasks must be string array)
+- title (string)
 
-Example:
+Do not include any extra keys like candidate_name, recommendation, strengths, weaknesses, notes, report_date, etc.
+
+Example format:
 {
-  "matchScore": 92,
+  "matchScore": 78,
   "technicalQuestions": [
-    { "question": "...", "intention": "...", "answer": "..." }
+    { "question": "Explain SQL JOINs.", "intention": "Check SQL depth", "answer": "Define each JOIN and give examples." }
   ],
   "behavioralQuestions": [
-    { "question": "...", "intention": "...", "answer": "..." }
+    { "question": "Tell me about a challenge.", "intention": "Assess problem solving", "answer": "Use STAR with measurable impact." }
   ],
   "skillGaps": [
-    { "skill": "Spring Boot", "severity": "low" }
+    { "skill": "Power BI", "severity": "medium" }
   ],
   "preparationPlan": [
-    { "day": 1, "focus": "...", "tasks": ["..."] }
+    { "day": 1, "focus": "SQL revision", "tasks": ["Practice joins", "Practice window functions"] }
   ],
-  "title": "Interview Report - ..."
-}
-
-Do not include any additional fields or text outside the JSON object.
-`;
+  "title": "Interview Report - Candidate Name - Data Analyst"
+}`;
 
     const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
             responseSchema: zodToJsonSchema(interviewReportSchema),
         }
-    })
+    });
 
+    console.log("Gemini interview raw response:", response?.text);
 
-    if (!response.text) {
-        throw new Error("AI returned an empty response text.");
-    }
-
-    let report;
+    let parsed;
     try {
-        report = JSON.parse(response.text);
-    } catch (parseError) {
-        console.error("Failed to parse AI response text as JSON:", response.text);
-        throw parseError;
+        parsed = JSON.parse(response.text);
+    } catch {
+        throw new Error("AI returned invalid JSON format.");
     }
 
-    return normalizeInterviewReport(report);
+    // Parse stringified JSON objects in arrays
+    parsed = parseStringifiedObjects(parsed);
+
+    let validated = interviewReportSchema.safeParse(parsed);
+    if (!validated.success) {
+        parsed = await reformatInterviewReportWithAI(parsed, { resume, selfDescription, jobDescription });
+        parsed = parseStringifiedObjects(parsed);
+        validated = interviewReportSchema.safeParse(parsed);
+    }
+
+    if (!validated.success) {
+        throw new Error("AI response is missing required fields (question/intention/answer format) even after reformat.");
+    }
+
+    return validated.data;
 }
 
-function normalizeInterviewReport(report) {
-    if (typeof report !== "object" || report === null) {
-        return report;
-    }
+async function reformatInterviewReportWithAI(rawReport, context) {
+    const technicalQuestions = Array.isArray(rawReport?.technicalQuestions) ? rawReport.technicalQuestions : [];
+    const behavioralQuestions = Array.isArray(rawReport?.behavioralQuestions) ? rawReport.behavioralQuestions : [];
+    const skillGaps = Array.isArray(rawReport?.skillGaps) ? rawReport.skillGaps : [];
+    const preparationPlan = Array.isArray(rawReport?.preparationPlan) ? rawReport.preparationPlan : [];
+    const matchScore = Number.isFinite(Number(rawReport?.matchScore)) ? Number(rawReport.matchScore) : 0;
+    const title = typeof rawReport?.title === "string" ? rawReport.title : "Interview Report";
 
-    return {
-        ...report,
-        technicalQuestions: normalizeQAArray(report.technicalQuestions),
-        behavioralQuestions: normalizeQAArray(report.behavioralQuestions),
-        skillGaps: normalizeKeyValueArray(report.skillGaps, ["skill", "severity"]),
-        preparationPlan: normalizePreparationPlan(report.preparationPlan),
-    };
+    const reformatPrompt = `You are a strict JSON transformer.
+
+Task:
+Transform the provided content into EXACTLY this schema and return ONLY valid JSON:
+{
+  "matchScore": number,
+  "technicalQuestions": [{ "question": string, "intention": string, "answer": string }],
+  "behavioralQuestions": [{ "question": string, "intention": string, "answer": string }],
+  "skillGaps": [{ "skill": string, "severity": "low" | "medium" | "high" }],
+  "preparationPlan": [{ "day": number, "focus": string, "tasks": string[] }],
+  "title": string
 }
 
-function normalizeQAArray(arr) {
-    if (!Array.isArray(arr)) {
-        return arr ?? [];
-    }
+Critical rules:
+1) technicalQuestions and behavioralQuestions MUST be arrays of OBJECTS, never strings.
+2) For each question string, generate meaningful intention and answer specific to that question.
+3) skillGaps MUST be object array with severity.
+4) preparationPlan MUST be object array; parse "Day X: ..." text into day/focus/tasks.
+5) Do not add any keys beyond the schema keys.
+6) Return JSON only.
 
-    if (arr.length === 0 || typeof arr[0] === "object") {
-        return arr;
-    }
+Context:
+- Resume: ${context.resume}
+- Self Description: ${context.selfDescription}
+- Job Description: ${context.jobDescription}
 
-    const normalized = [];
-    let current = {};
+Input values:
+- matchScore: ${matchScore}
+- title: ${JSON.stringify(title)}
+- technicalQuestions: ${JSON.stringify(technicalQuestions)}
+- behavioralQuestions: ${JSON.stringify(behavioralQuestions)}
+- skillGaps: ${JSON.stringify(skillGaps)}
+- preparationPlan: ${JSON.stringify(preparationPlan)}
+`;
 
-    for (let i = 0; i < arr.length; i += 2) {
-        const key = arr[i];
-        const value = arr[i + 1];
-        if (key === "question" || key === "intention" || key === "answer") {
-            current[key] = value;
-            if (key === "answer") {
-                normalized.push(current);
-                current = {};
-            }
+    const reformatResponse = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: reformatPrompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: zodToJsonSchema(interviewReportSchema),
+            temperature: 0,
         }
-    }
+    });
 
-    return normalized;
+    console.log("Gemini interview reformatted response:", reformatResponse?.text);
+    return JSON.parse(reformatResponse.text);
 }
-
-function normalizeKeyValueArray(arr, keys) {
-    if (!Array.isArray(arr)) {
-        return arr ?? [];
-    }
-
-    if (arr.length === 0 || typeof arr[0] === "object") {
-        return arr;
-    }
-
-    const normalized = [];
-    let current = {};
-
-    for (let i = 0; i < arr.length; i += 2) {
-        const key = arr[i];
-        const value = arr[i + 1];
-        if (keys.includes(key)) {
-            current[key] = value;
-            if (Object.keys(current).length === keys.length) {
-                normalized.push(current);
-                current = {};
-            }
-        }
-    }
-
-    return normalized;
-}
-
-function normalizePreparationPlan(arr) {
-    if (!Array.isArray(arr)) {
-        return arr ?? [];
-    }
-
-    if (arr.length === 0 || typeof arr[0] === "object") {
-        return arr.map((item) => ({
-            ...item,
-            tasks: Array.isArray(item?.tasks) ? item.tasks : item?.tasks ? [item.tasks] : [],
-        }));
-    }
-
-    const normalized = [];
-    let current = {};
-
-    for (let i = 0; i < arr.length; i += 2) {
-        const key = arr[i];
-        const value = arr[i + 1];
-        if (key === "day" || key === "focus" || key === "tasks") {
-            current[key] = key === "tasks" && !Array.isArray(value) ? [value] : value;
-            if (key === "tasks") {
-                normalized.push(current);
-                current = {};
-            }
-        }
-    }
-
-    return normalized;
-}
-
- 
 
 
 
