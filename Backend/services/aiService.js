@@ -41,6 +41,56 @@ const interviewReportSchema = z.object({
     title: z.string().describe("The title of the job for which the interview report is generated"),
 })
 
+function toObjectArrayFromFlatPairs(items, fields) {
+    if (!Array.isArray(items)) return [];
+    if (items.every((item) => item && typeof item === "object" && !Array.isArray(item))) {
+        return items;
+    }
+
+    const out = [];
+    let current = {};
+
+    for (let i = 0; i < items.length; i += 1) {
+        const key = items[i];
+        const value = items[i + 1];
+        if (typeof key === "string" && fields.includes(key)) {
+            current[key] = value;
+            i += 1;
+            const isComplete = fields.every((field) => Object.prototype.hasOwnProperty.call(current, field));
+            if (isComplete) {
+                out.push(current);
+                current = {};
+            }
+        }
+    }
+
+    return out;
+}
+
+function normalizeInterviewReportShape(data) {
+    if (!data || typeof data !== "object") return data;
+
+    const normalized = { ...data };
+    normalized.technicalQuestions = toObjectArrayFromFlatPairs(normalized.technicalQuestions, ["question", "intention", "answer"]);
+    normalized.behavioralQuestions = toObjectArrayFromFlatPairs(normalized.behavioralQuestions, ["question", "intention", "answer"]);
+    normalized.skillGaps = toObjectArrayFromFlatPairs(normalized.skillGaps, ["skill", "severity"]).map((item) => ({
+        skill: String(item.skill ?? ""),
+        severity: ["low", "medium", "high"].includes(String(item.severity).toLowerCase())
+            ? String(item.severity).toLowerCase()
+            : "medium"
+    }));
+    normalized.preparationPlan = toObjectArrayFromFlatPairs(normalized.preparationPlan, ["day", "focus", "tasks"]).map((item) => {
+        const dayNum = Number(item.day);
+        return {
+            day: Number.isFinite(dayNum) ? dayNum : 1,
+            focus: String(item.focus ?? ""),
+            tasks: Array.isArray(item.tasks) ? item.tasks.map((t) => String(t)) : [String(item.tasks ?? "")]
+        };
+    });
+
+    return normalized;
+}
+
 // Helper function to parse stringified JSON objects in arrays
 function parseStringifiedObjects(data) {
     if (!data || typeof data !== "object") return data;
@@ -143,11 +193,13 @@ Example format:
 
     // Parse stringified JSON objects in arrays
     parsed = parseStringifiedObjects(parsed);
+    parsed = normalizeInterviewReportShape(parsed);
 
     let validated = interviewReportSchema.safeParse(parsed);
     if (!validated.success) {
         parsed = await reformatInterviewReportWithAI(parsed, { resume, selfDescription, jobDescription });
         parsed = parseStringifiedObjects(parsed);
+        parsed = normalizeInterviewReportShape(parsed);
         validated = interviewReportSchema.safeParse(parsed);
     }
 

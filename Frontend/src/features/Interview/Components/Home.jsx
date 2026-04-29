@@ -17,6 +17,7 @@ function Home() {
   const { user } = useAuth();
   const [jobDescription, setJobDescription] = useState("");
   const [selfDescription, setSelfDescription] = useState("");
+  const [selectedResumeName, setSelectedResumeName] = useState("");
   const resumeInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -67,6 +68,11 @@ function Home() {
     }
   };
 
+  const handleResumeChange = (event) => {
+    const file = event.target.files?.[0];
+    setSelectedResumeName(file ? file.name : "");
+  };
+
   if (loading) {
     return (
       <div className="loading-screen">
@@ -92,16 +98,16 @@ function Home() {
             Elevate Your <span>Job Readiness</span>
           </h1>
           <p className="hero-subtitle">
-            Upload a resume and let the AI Genie illuminate the path to the ideal hire with deep insights and smart matching. 
+            Upload a resume and let the AI Genie illuminate the path to the ideal hire with deep insights and smart matching.
           </p>
 
           <section className="upload-card">
-            <label className="upload-zone" htmlFor="resume-upload">
-              <input ref={resumeInputRef} id="resume-upload" type="file" accept=".pdf,.doc,.docx" />
-              <span className="upload-icon">⬆</span>
-              <strong>Drop your resume here</strong>
+            <label className={`upload-zone ${selectedResumeName ? "uploaded" : ""}`} htmlFor="resume-upload">
+              <input ref={resumeInputRef} id="resume-upload" type="file" accept=".pdf,.doc,.docx" onChange={handleResumeChange} />
+              <span className="upload-icon">&#8593;</span>
+              <strong>{selectedResumeName ? "Resume uploaded" : "Drop your resume here"}</strong>
               <small>
-                PDF, DOCX up to 10MB or <span>Click to browse</span>
+                {selectedResumeName ? <span className="uploaded-file-name">{selectedResumeName}</span> : <>PDF, DOCX up to 10MB or <span>Click to browse</span></>}
               </small>
             </label>
           </section>
@@ -123,18 +129,18 @@ function Home() {
                 onChange={(e) => setSelfDescription(e.target.value)}
 
                 rows={7}
-                placeholder="Briefly describe candidate’s background, technical skills, strengths, weaknesses and behavioral traits..."
+                placeholder="Briefly describe candidate's background, technical skills, strengths, weaknesses and behavioral traits..."
               />
             </div>
           </section>
 
-         
+
 
           <button className="start-btn" type="button" onClick={handleGetReport}>
-          <span>⚡</span>Generate Report
+          <span>&#9889;</span>Generate Report
           </button>
 
-         
+
 
           <section className="reports-section">
             <div className="reports-head">

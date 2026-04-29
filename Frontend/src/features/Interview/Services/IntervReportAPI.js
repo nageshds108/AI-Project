@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const BASE_URL = "https://ai-project-backend-j2qe.onrender.com";
+
 const api = axios.create({
-  baseURL: "https://ai-project-backend-j2qe.onrender.com",
+  baseURL: BASE_URL,
   withCredentials: true,
  
 });

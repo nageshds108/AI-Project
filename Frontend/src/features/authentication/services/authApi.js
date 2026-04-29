@@ -1,5 +1,6 @@
 import axios from 'axios';
-const API_URL = 'https://ai-project-backend-j2qe.onrender.com/api/auth';
+const BASE_URL = "https://ai-project-backend-j2qe.onrender.com";
+const API_URL = `${BASE_URL}/api/auth`;
 
 export async function register (username, email, password) {
   try {
@@ -22,7 +23,7 @@ export async function login (email, password) {
     },{withCredentials: true});
     return response.data;
   } catch (error) {
-    console.error('Login error:', error);
+    throw error;
   }
 }
 

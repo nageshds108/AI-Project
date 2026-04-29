@@ -7,15 +7,19 @@ import AuthLoader from "./AuthLoader";
 function Login() {
      const [email, setEmail] = useState("");
      const [password, setPassword] = useState("");
+     const [errorMessage, setErrorMessage] = useState("");
      const {handleLogin, Loading} = useAuth();
      const navigate = useNavigate();
 
      const handleSubmit=async (e)=>{
         e.preventDefault()
+        setErrorMessage("");
         const result = await handleLogin(email, password);
         if (result && result.user) {
             navigate("/");
+            return;
         }
+        setErrorMessage(result?.error || "Invalid email or password.");
         }
 
     if(Loading){
@@ -35,6 +39,7 @@ function Login() {
                     <div  className="inp-grp">
                     <label htmlFor="password">Password</label>
                     <input type="password"  id="password"  name="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+                    {errorMessage ? <p className="auth-error-message">{errorMessage}</p> : null}
                     <button className="btn btn-primary">submit</button>
                     <p>Don't have an account? <Link to="/register">Register</Link> </p>
                 </form>

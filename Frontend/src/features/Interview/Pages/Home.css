@@ -125,6 +125,11 @@
   padding: 20px;
 }
 
+.upload-zone.uploaded {
+  border-color: rgba(66, 221, 128, 0.9);
+  box-shadow: 0 0 0 1px rgba(66, 221, 128, 0.3) inset, 0 0 28px rgba(66, 221, 128, 0.45);
+}
+
 .upload-zone input {
   display: none;
 }
@@ -156,6 +161,12 @@
 .upload-zone small span {
   color: #42d5ff;
   font-weight: 600;
+}
+
+.uploaded-file-name {
+  color: #7dffb3 !important;
+  font-weight: 700 !important;
+  word-break: break-word;
 }
 
 .upload-tags {

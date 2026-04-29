@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
   return res.status(200).json({ message: 'Interview API is working' });
 });
 
-router.post('/', authUser, uploadLogger, upload.single('resume'), generateReport);
+router.post('/', authUser, upload.single('resume'), uploadLogger, generateReport);
 
 router.get('/report/:InterviewId', authUser, getReportByInterviewId);
 
