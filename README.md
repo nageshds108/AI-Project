@@ -1,105 +1,81 @@
-# 🎯 Sherpa AI — Interview Preparation Platform
+# Sherpa AI - Interview Preparation Platform
 
-A modern AI-powered web application that analyzes your resume against a job description and generates a personalized interview preparation report — including technical questions, behavioral questions, skill gap analysis, preparation roadmap, and match score.
+**Live Demo:** **https://ai-project-7d8x.onrender.com**
 
----
+Sherpa AI is a full-stack AI-powered web platform that helps candidates prepare for interviews by analyzing a resume against a job description and generating a personalized preparation report with a match score, technical and behavioral questions, skill-gap analysis, strengths and weaknesses, and a structured roadmap to improve interview readiness faster and more effectively.
 
-## 🌐 Overview
+## How It Works
 
-Sherpa AI is a full-stack intelligent platform built to help candidates prepare effectively for job interviews.  
-By leveraging AI, it transforms resumes into actionable insights and structured preparation strategies.
+1. The user signs up or logs in.
+2. The user uploads a resume (PDF) and provides a target job description.
+3. The backend extracts and parses resume content.
+4. Google Gemini analyzes resume and job-description alignment.
+5. The platform generates a complete interview preparation report.
+6. The user reviews reports, tracks history, and prepares using suggested focus areas.
 
-The system uses **Google Gemini AI** to analyze user inputs and generate detailed interview reports, making preparation smarter, faster, and more personalized.
+## Features
 
----
+### AI-Powered Analysis
+- Resume vs. job-description comparison
+- Match score generation (0-100)
+- Context-aware AI insights
 
-## 🚀 Features
+### Interview Report Generation
+- Technical interview questions with suggested answers
+- Behavioral interview questions with explanations
+- Skill-gap analysis (low, medium, high severity)
+- Strength and weakness identification
 
-### 🤖 AI-Powered Analysis
-- Resume vs Job Description comparison  
-- Match score generation (0–100%)  
-- Context-aware AI insights  
+### Preparation Planning
+- Day-by-day preparation roadmap
+- Task-based learning suggestions
+- Priority focus areas based on missing skills
 
----
+### Resume Processing
+- PDF resume upload
+- Resume text extraction and parsing
+- AI-enhanced report generation from extracted content
 
-### 📊 Interview Report Generation
-- Technical interview questions with answers  
-- Behavioral interview questions with explanations  
-- Skill gap analysis (low / medium / high severity)  
-- Strengths & weaknesses identification  
+### Report Management
+- View previously generated reports
+- Open detailed report pages
+- Delete old reports
+- Persistent history stored in database
 
----
+### Authentication and Security
+- User registration and login
+- JWT-based authentication
+- HTTP-only cookies for session security
+- Protected routes for authorized users
 
-### 📅 Preparation Plan
-- Day-by-day preparation roadmap  
-- Task-based learning suggestions  
-- Focus areas based on missing skills  
-
----
-
-### 📄 Resume Processing
-- Upload resume (PDF format)  
-- Extract and parse text using backend processing  
-- Generate optimized AI-enhanced resume PDF  
-
----
-
-### 🧾 Report Management
-- View all previous reports  
-- Open detailed report view  
-- Delete reports  
-- Persistent history stored in database  
-
----
-
-### 🔐 Authentication System
-- User registration & login  
-- JWT-based authentication  
-- HTTP-only cookies for secure sessions  
-- Protected routes  
-
----
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
-- React 18  
-- React Router v6  
-- Context API (State Management)  
-- Axios (API calls)  
-- Custom CSS (Dark Theme UI)  
-
----
+- React 18
+- React Router v6
+- Context API
+- Axios
+- Custom CSS
 
 ### Backend
-- Node.js  
-- Express.js  
-- MongoDB  
-- Mongoose  
-
----
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
 
 ### AI Integration
-- Google Gemini API (`@google/genai`)  
+- Google Gemini API (`@google/genai`)
 
----
+### Supporting Libraries
+- `bcryptjs`
+- `jsonwebtoken`
+- `multer`
+- `pdf-parse`
+- `puppeteer`
+- `zod`
+- `cookie-parser`
+- `cors`
 
-### Other Tools & Libraries
-- bcryptjs (Password hashing)  
-- jsonwebtoken (JWT authentication)  
-- multer (File uploads)  
-- pdf-parse (Resume text extraction)  
-- puppeteer (PDF generation)  
-- zod (Validation)  
-- cookie-parser & cors  
+## Why This Project Matters
 
----
-
-## ⚙️ How It Works
-
-1. User registers or logs in  
-2. Uploads resume + enters job description  
-3. Backend extracts resume text  
-4. AI processes and analyzes inputs  
-5. System generates structured interview report  
-6. User views and prepares accordingly  
+This project is useful for students and professionals who want structured, personalized interview preparation instead of generic advice. It combines AI analysis with practical output so users can clearly understand where they stand and what to improve before interviews.
